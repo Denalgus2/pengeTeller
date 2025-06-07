@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengeteller</title>
+    <!-- Tailwind CSS for moderne styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for en ren skrifttype -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Bruk Inter som standard skrifttype */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Egendefinerte stiler for nummer-input piler */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        /* Stiler for utskrift */
+        @media print {
+            body > *:not(#print-content) {
+                display: none;
+            }
+            #print-content {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+<div id="container" class="w-full max-w-7xl bg-white rounded-2xl shadow-lg p-6 md:p-10">
+
+    <!-- Overskrift -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Pengeteller (NOK)</h1>
+        <p class="text-gray-500 mt-2">Et enkelt verktøy for å telle kassen.</p>
+    </div>
+
+    <!-- Valør-rader -->
+    <div id="moneyRows" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-x-8 gap-y-6">
+        <!-- Rader blir dynamisk satt inn her med JavaScript -->
+    </div>
+
+    <!-- Bunnseksjon: Handlinger og Resultater -->
+    <div class="mt-10 grid grid-cols-1 lg:grid-cols-2 lg:gap-8 items-start">
+
+        <!-- Handlingslinje -->
+        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 h-full flex flex-col justify-center gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center gap-4">
+                    <label for="drawerNumberInput" class="text-lg font-medium text-gray-700 w-40">Kassenummer:</label>
+                    <input type="text" id="drawerNumberInput" class="w-full text-center text-lg font-semibold bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="flex items-center gap-4">
+                    <label for="drawerAmount" class="text-lg font-medium text-gray-700 w-40">Kassen skal ha:</label>
+                    <input type="number" id="drawerAmount" value="4000" min="0" class="w-full text-center text-lg font-semibold bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div class="flex items-center gap-4">
+                    <label for="maxAmountInput" class="text-lg font-medium text-gray-700 w-40">Maksimalt uttak:</label>
+                    <input type="number" id="maxAmountInput" value="10000" min="0" class="w-full text-center text-lg font-semibold bg-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-4 mt-4">
+                <button id="resetButton" class="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors">Tilbakestill</button>
+                <button id="printButton" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-sm hidden">Skriv ut</button>
+                <button id="calculateButton" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm">Beregn</button>
+            </div>
+        </div>
+
+        <!-- Resultatvisning -->
+        <div id="resultContainer" class="mt-8 lg:mt-0 hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Resultat av beregning</h2>
+            <div id="result" class="text-lg text-gray-700 bg-blue-50 border border-blue-200 rounded-xl p-6 min-h-[168px]">
+                <!-- Resultat vil bli vist her -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bekreftelsesmodal for tilbakestilling -->
+<div id="resetModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center hidden">
+    <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+                <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Bekreft tilbakestilling</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500">Er du sikker på at du vil tilbakestille alle antall? Handlingen kan ikke angres.</p>
+            </div>
+            <div class="items-center px-4 py-3 gap-3 flex justify-center">
+                <button id="cancelReset" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md w-28 hover:bg-gray-300">Avbryt</button>
+                <button id="confirmReset" class="px-4 py-2 bg-red-600 text-white rounded-md w-40 hover:bg-red-700">Ja, bekreft tilbakestilling</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Skjult element for utskriftsinnhold -->
+<div id="print-content" class="hidden"></div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- KONFIGURASJON ---
+        const denominations = [1000, 500, 200, 100, 50, 20, 10, 5, 1];
+
+        const denominationImages = {
+            1000: 'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/sedler/utgave-viii/1000f_specimen.jpg?v=23102019130053&mode=crop&width=780',
+            500:  'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/sedler/utgave-viii/500front_viii_specimen.jpg?v=08052019140939&mode=crop&width=780',
+            200:  'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/sedler/utgave-viii/200front_viii_specimen.jpg?v=08052019105627&mode=crop&width=780',
+            100:  'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/sedler/utgave-viii/100front_viii_specimen.jpg?v=08052019105527&mode=crop&width=780',
+            50:   'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/sedler/utgave-viii/50front_viii_specimen.jpg?v=08052019141003&mode=crop&width=780',
+            20:   'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/mynter/20kr-revers.png?v=08052019155232&mode=crop&width=780',
+            10:   'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/mynter/10kr-revers.png?v=08052019155129&mode=crop&width=780',
+            5:    'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/mynter/5kr-revers.png?v=08052019155409&mode=crop&width=780',
+            1:    'https://www.norges-bank.no/globalassets/upload/sedler-og-mynter/images/mynter/1kr-revers.png?v=08052019155200&mode=crop&width=780'
+        };
+        const placeholderImage = 'https://placehold.co/200x120/e2e8f0/94a3b8?text=No+Image';
+
+        // --- DOM-ELEMENTER ---
+        const moneyRowsContainer = document.getElementById('moneyRows');
+        const calculateButton = document.getElementById('calculateButton');
+        const printButton = document.getElementById('printButton');
+        const resetButton = document.getElementById('resetButton');
+        const drawerAmountInput = document.getElementById('drawerAmount');
+        const maxAmountInput = document.getElementById('maxAmountInput');
+        const drawerNumberInput = document.getElementById('drawerNumberInput');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultDiv = document.getElementById('result');
+        const resetModal = document.getElementById('resetModal');
+        const confirmResetButton = document.getElementById('confirmReset');
+        const cancelResetButton = document.getElementById('cancelReset');
+        const printContentDiv = document.getElementById('print-content');
+
+        // --- INITIALISERING ---
+        const createDenominationRows = () => {
+            denominations.forEach(denom => {
+                const row = document.createElement('div');
+                row.className = 'row flex items-center bg-gray-50 p-4 rounded-xl border border-gray-200';
+                row.innerHTML = `
+                    <img src="${denominationImages[denom]}" onerror="this.src='${placeholderImage}'" alt="${denom} NOK" class="w-24 h-14 object-contain rounded-md">
+                    <div class="flex-grow text-center">
+                        <label class="text-xl font-semibold text-gray-800">${denom} kr</label>
+                    </div>
+                    <div class="flex items-center gap-2 bg-white rounded-lg border border-gray-300 p-1">
+                        <button data-denom="${denom}" data-action="decrease" class="w-8 h-8 text-2xl text-red-500 rounded-md hover:bg-red-100 transition-colors">-</button>
+                        <input type="number" id="count${denom}" data-denom="${denom}" value="0" min="0" class="w-16 text-center text-lg font-medium border-none focus:ring-0 bg-transparent">
+                        <button data-denom="${denom}" data-action="increase" class="w-8 h-8 text-2xl text-green-500 rounded-md hover:bg-green-100 transition-colors">+</button>
+                    </div>
+                `;
+                moneyRowsContainer.appendChild(row);
+            });
+        };
+
+        // --- LOCAL STORAGE ---
+        const saveSettings = () => {
+            localStorage.setItem('pengeteller_drawerAmount', drawerAmountInput.value);
+            localStorage.setItem('pengeteller_maxAmount', maxAmountInput.value);
+            localStorage.setItem('pengeteller_drawerNumber', drawerNumberInput.value);
+        };
+
+        const loadSettings = () => {
+            drawerAmountInput.value = localStorage.getItem('pengeteller_drawerAmount') || '4000';
+            maxAmountInput.value = localStorage.getItem('pengeteller_maxAmount') || '10000';
+            drawerNumberInput.value = localStorage.getItem('pengeteller_drawerNumber') || '';
+        };
+
+        // --- LOGIKK ---
+        const getCalculation = () => {
+            const counts = {};
+            let total = 0;
+            denominations.forEach(denom => {
+                const count = parseInt(document.getElementById(`count${denom}`).value) || 0;
+                counts[denom] = count;
+                total += count * denom;
+            });
+
+            const drawerAmount = parseInt(drawerAmountInput.value) || 0;
+            const maxAmount = parseInt(maxAmountInput.value) || 0;
+            const drawerNumber = drawerNumberInput.value;
+
+            let amountOver = total - drawerAmount;
+            let toRemove = Math.min(amountOver, maxAmount);
+            if (toRemove < 0) toRemove = 0;
+
+            const removalDetails = [];
+            if (toRemove > 0) {
+                let remainingToRemove = toRemove;
+                denominations.forEach(denom => {
+                    const availableCount = counts[denom];
+                    const numToRemove = Math.min(availableCount, Math.floor(remainingToRemove / denom));
+                    if (numToRemove > 0) {
+                        removalDetails.push({ denom, count: numToRemove });
+                        remainingToRemove -= numToRemove * denom;
+                    }
+                });
+            }
+            return { total, drawerAmount, toRemove, removalDetails, counts, drawerNumber };
+        };
+
+        // --- HENDELSESHÅNDTERERE ---
+        const handleCountChange = (event) => {
+            const target = event.target;
+            if (target.matches('button[data-action]')) {
+                const action = target.dataset.action;
+                const denom = parseInt(target.dataset.denom);
+                const input = document.getElementById(`count${denom}`);
+                let currentValue = parseInt(input.value) || 0;
+
+                if (action === 'increase') currentValue++;
+                else if (action === 'decrease') currentValue = Math.max(0, currentValue - 1);
+                input.value = currentValue;
+            }
+            if (target.matches('input[type="number"]') && parseInt(target.value) < 0) {
+                target.value = 0;
+            }
+        };
+
+        const handleCalculate = () => {
+            const { total, drawerAmount, toRemove, removalDetails } = getCalculation();
+            let resultHTML = `<p class="font-semibold">Totalt i kassen: <span class="font-bold text-blue-800">${total.toLocaleString('no-NO')} kr</span></p>`;
+            resultHTML += `<p class="font-semibold mb-4">Målbeløp: <span class="font-bold">${drawerAmount.toLocaleString('no-NO')} kr</span></p>`;
+            resultHTML += `<hr class="my-4 border-t border-blue-200">`;
+
+            if (toRemove <= 0) {
+                const needed = drawerAmount - total;
+                resultHTML += `<p class="text-green-700 font-bold">Ingen penger må fjernes. ${needed > 0 ? `Du må legge til ${needed.toLocaleString('no-NO')} kr.` : ''}</p>`;
+            } else {
+                resultHTML += `<p class="font-bold text-red-700 mb-2">Du må fjerne: <span class="text-2xl">${toRemove.toLocaleString('no-NO')} kr</span></p>`;
+                resultHTML += `<div class="mt-2 text-sm">Optimal fjerning:</div><ul class="list-disc list-inside mt-1 space-y-1">`;
+                removalDetails.forEach(item => {
+                    resultHTML += `<li><span class="font-bold">${item.count}</span> x ${item.denom} kr</li>`;
+                });
+                resultHTML += `</ul>`;
+            }
+            resultDiv.innerHTML = resultHTML;
+            resultContainer.classList.remove('hidden');
+            printButton.classList.remove('hidden');
+        };
+
+        const handlePrint = () => {
+            const { total, drawerAmount, toRemove, removalDetails, counts, drawerNumber } = getCalculation();
+            const now = new Date();
+
+            let countedTableHTML = '';
+            denominations.forEach(denom => {
+                if (counts[denom] > 0) {
+                    countedTableHTML += `
+                        <tr>
+                            <td class="cell">${denom} kr</td>
+                            <td class="cell"><strong>${counts[denom]} stk</strong></td>
+                            <td class="cell num">${(counts[denom] * denom).toLocaleString('no-NO')} kr</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            let removalTableHTML = '';
+            if (toRemove > 0 && removalDetails.length > 0) {
+                removalDetails.forEach(item => {
+                    removalTableHTML += `
+                        <tr>
+                            <td class="cell"><strong>${item.count} stk</strong></td>
+                            <td class="cell">${item.denom} kr</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                removalTableHTML = `<tr><td colspan="2" class="cell">Ingen valører trengs å fjernes.</td></tr>`;
+            }
+
+            let printHTML = `
+                <style>
+                    @media print {
+                        @page {
+                            size: A4;
+                            margin: 1cm;
+                        }
+                        body {
+                            font-family: sans-serif;
+                            font-size: 12pt;
+                        }
+                        .print-container { width: 100%; }
+                        .header { font-size: 20pt; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 16px; }
+                        .info-p { margin: 2px 0; }
+                        .summary-box { margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 24px; }
+                        .summary-box h2 { font-size: 14pt; margin: 0 0 8px 0; }
+                        .summary-box p { margin: 4px 0; font-size: 12pt; }
+                        .columns { display: flex; gap: 2cm; align-items: flex-start; width: 100%; }
+                        .column { flex: 1; min-width: 0; }
+                        .column h2 { font-size: 14pt; margin-bottom: 8px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, .cell { padding: 8px 10px; border: 1px solid #ddd; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        .num { text-align: right; }
+                    }
+                </style>
+                <div class="print-container">
+                    <h1 class="header">Kasseoppgjør</h1>
+                    <p class="info-p"><strong>Kassenummer:</strong> ${drawerNumber || 'Ikke spesifisert'}</p>
+                    <p class="info-p"><strong>Dato:</strong> ${now.toLocaleDateString('no-NO')} kl. ${now.toLocaleTimeString('no-NO')}</p>
+
+                    <div class="summary-box">
+                        <h2>Oppsummering</h2>
+                        <p><strong>Totalt talt opp i kassen:</strong> ${total.toLocaleString('no-NO')} kr</p>
+                        <p><strong>Kassen skal inneholde:</strong> ${drawerAmount.toLocaleString('no-NO')} kr</p>
+                        <p style="font-size: 14pt; font-weight: bold; margin-top: 8px;"><strong>Totalbeløp som skal fjernes:</strong> ${toRemove > 0 ? toRemove.toLocaleString('no-NO') : 0} kr</p>
+                    </div>
+
+                    <div class="columns">
+                        <div class="column">
+                             <h2>Opptalt Beholdning</h2>
+                             <table>
+                                <thead>
+                                    <tr>
+                                        <th>Valør</th>
+                                        <th>Antall</th>
+                                        <th class="num">Sum</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${countedTableHTML}</tbody>
+                            </table>
+                        </div>
+                        <div class="column">
+                            <h2>Valører som skal fjernes</h2>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Antall</th>
+                                        <th>Valør</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${removalTableHTML}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>`;
+            printContentDiv.innerHTML = printHTML;
+            window.print();
+        };
+
+        const performReset = () => {
+            denominations.forEach(denom => {
+                document.getElementById(`count${denom}`).value = 0;
+            });
+            resultContainer.classList.add('hidden');
+            printButton.classList.add('hidden');
+            resetModal.classList.add('hidden');
+        };
+
+        // --- KNYTT LYTTERE ---
+        createDenominationRows();
+        loadSettings();
+
+        moneyRowsContainer.addEventListener('click', handleCountChange);
+        moneyRowsContainer.addEventListener('change', handleCountChange);
+        calculateButton.addEventListener('click', handleCalculate);
+        printButton.addEventListener('click', handlePrint);
+
+        drawerAmountInput.addEventListener('input', saveSettings);
+        maxAmountInput.addEventListener('input', saveSettings);
+        drawerNumberInput.addEventListener('input', saveSettings);
+
+        resetButton.addEventListener('click', () => resetModal.classList.remove('hidden'));
+        cancelResetButton.addEventListener('click', () => resetModal.classList.add('hidden'));
+        confirmResetButton.addEventListener('click', performReset);
+    });
+</script>
+
+</body>
+</html>
